@@ -1,0 +1,36 @@
+{
+    "name": "vscode-perf",
+    "version": "0.0.1",
+    "description": "Tooling for evaluating performance of VS Code",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/microsoft/vscode-perf"
+    },
+    "homepage": "https://github.com/microsoft/vscode-perf",
+    "keywords": [
+        "vscode"
+    ],
+    "bin": {
+        "vscode-perf": "bin/vscode-perf"
+    },
+    "license": "MIT",
+    "authors": "microsoft",
+    "main": "out/index",
+    "scripts": {
+        "compile": "tsc -p ./",
+        "build": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "prepare": "npm run build"
+    },
+    "engines": {
+        "node": ">= 16"
+    },
+    "dependencies": {
+        "chalk": "^4.x",
+        "commander": "^9.4.0"
+    },
+    "devDependencies": {
+        "@types/node": "16.x",
+        "typescript": "4.8.x"
+    }
+}
