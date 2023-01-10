@@ -1,5 +1,5 @@
 {
-    "name": "vscode-perf",
+    "name": "@vscode/vscode-perf",
     "version": "0.0.1",
     "description": "Tooling for evaluating performance of VS Code",
     "repository": {
