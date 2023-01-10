@@ -11,10 +11,11 @@ import chalk from "chalk";
 export interface Options {
 	build: string;
 	durationMarkers?: string[];
-	file?: string;
+	durationMarkersFile?: string;
 	runs?: number;
 	folderToOpen?: string;
 	fileToOpen?: string;
+	profAppendTimers?: string;
 }
 
 export async function launch(options: Options) {
@@ -24,7 +25,7 @@ export async function launch(options: Options) {
 	} catch (error) { }
 	fs.mkdirSync(ROOT, { recursive: true });
 
-	const perfFile = options.file ?? PERFORMANCE_FILE;
+	const perfFile = options.durationMarkersFile ?? PERFORMANCE_FILE;
 
 	const codeArgs = [
 		'--accept-server-license-terms',
@@ -43,21 +44,23 @@ export async function launch(options: Options) {
 		perfFile,
 	];
 
+	if (options.profAppendTimers) {
+		codeArgs.push('--prof-append-timers');
+		codeArgs.push(options.profAppendTimers);
+	}
+
+	const markers: string[] = options.durationMarkers?.length ? [...options.durationMarkers]: ['ellapsed'];
+	for (const marker of markers) {
+		codeArgs.push('--prof-duration-markers');
+		codeArgs.push(marker);
+	}
+
 	if (options.folderToOpen) {
 		codeArgs.push(options.folderToOpen);
 	}
 
 	if (options.fileToOpen) {
 		codeArgs.push(options.fileToOpen);
-	}
-
-	const markers: string[] = ['ellapsed'];
-	if (options.durationMarkers) {
-		markers.push(...options.durationMarkers);
-	}
-	for (const marker of markers) {
-		codeArgs.push('--prof-duration-markers');
-		codeArgs.push(marker);
 	}
 
 	const runs = options.runs ?? PERFORMANCE_RUNS;
