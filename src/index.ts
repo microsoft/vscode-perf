@@ -11,8 +11,8 @@ module.exports = async function (argv: string[]): Promise<void> {
 
 	interface Opts {
 		build: string;
-		'duration-markers'?: string | string[];
-		'perf-file'?: string;
+		durationMarkers?: string | string[];
+		perfFile: string;
 		runs?: string;
 		folder?: string;
 		file?: string;
@@ -31,8 +31,8 @@ module.exports = async function (argv: string[]): Promise<void> {
 	try {
 		await launch({
 			build: opts.build,
-			"duration-markers": opts['duration-markers'] ? Array.isArray(opts['duration-markers']) ? opts['duration-markers'] : [opts['duration-markers']] : undefined,
-			file: opts['perf-file'],
+			durationMarkers: opts.durationMarkers ? Array.isArray(opts.durationMarkers) ? opts.durationMarkers : [opts.durationMarkers] : undefined,
+			file: opts.perfFile,
 			runs: opts.runs ? parseInt(opts.runs) : undefined,
 			folderToOpen: opts.folder,
 			fileToOpen: opts.file

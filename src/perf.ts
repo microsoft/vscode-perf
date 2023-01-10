@@ -10,7 +10,7 @@ import chalk from "chalk";
 
 export interface Options {
 	build: string;
-	'duration-markers'?: string[];
+	durationMarkers?: string[];
 	file?: string;
 	runs?: number;
 	folderToOpen?: string;
@@ -24,7 +24,7 @@ export async function launch(options: Options) {
 	} catch (error) { }
 	fs.mkdirSync(ROOT, { recursive: true });
 
-	const perfFile = options.file || PERFORMANCE_FILE;
+	const perfFile = options.file ?? PERFORMANCE_FILE;
 
 	const codeArgs = [
 		'--accept-server-license-terms',
@@ -51,8 +51,10 @@ export async function launch(options: Options) {
 		codeArgs.push(options.fileToOpen);
 	}
 
-	const markers = options['duration-markers'] ? Array.isArray(options['duration-markers']) ? options['duration-markers'] : [options['duration-markers']] : [];
-	markers.splice(0, 0, 'ellapsed');
+	const markers: string[] = ['ellapsed'];
+	if (options.durationMarkers) {
+		markers.push(...options.durationMarkers);
+	}
 	for (const marker of markers) {
 		codeArgs.push('--prof-duration-markers');
 		codeArgs.push(marker);
@@ -87,12 +89,8 @@ export async function launch(options: Options) {
 }
 
 function logMarker(content: string, marker: string, durations: Map<string, number[]>): void {
-
-	const index = content.indexOf(marker);
-	if (index === -1) {
-		return;
-	}
-	const matches = /(\d+)/.exec(content.substring(index));
+	const regex = new RegExp(`${escapeRegExpCharacters(marker)}\\s+(\\d+)`);
+	const matches = regex.exec(content);
 
 	if (!matches?.length) {
 		return;
@@ -105,4 +103,9 @@ function logMarker(content: string, marker: string, durations: Map<string, numbe
 	durations.set(marker, markerDurations);
 
 	console.log(`${chalk.gray('[perf]')} ${marker}: ${chalk.green(`${duration}ms`)} (current), ${chalk.green(`${markerDurations[0]}ms`)} (fastest), ${chalk.green(`${markerDurations[markerDurations.length - 1]}ms`)} (slowest), ${chalk.green(`${markerDurations[Math.floor(markerDurations.length / 2)]}ms`)} (median)`);
+}
+
+
+function escapeRegExpCharacters(value: string): string {
+	return value.replace(/[\\\{\}\*\+\?\|\^\$\.\[\]\(\)]/g, '\\$&');
 }
