@@ -7,7 +7,13 @@ import chalk from 'chalk';
 import { Option, program } from 'commander';
 import { launch } from './perf';
 
-module.exports = async function (argv: string[]): Promise<void> {
+export async function run(args?: string[]): Promise<void> {
+
+	if (args) {
+		args.splice(0, 0, '', ''); // add dummy values for node and script name
+	} else {
+		args = process.argv;
+	}
 
 	interface Opts {
 		build: string;
@@ -28,7 +34,7 @@ module.exports = async function (argv: string[]): Promise<void> {
 		.option('--runs <number-of-runs>', 'number of times to run the performance measurement')
 		.addOption(new Option('--prof-append-timers <prof-append-timers>').hideHelp(true));
 
-	const opts: Opts = program.parse(argv).opts();
+	const opts: Opts = program.parse(args).opts();
 
 	try {
 		await launch({

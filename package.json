@@ -16,6 +16,7 @@
     "license": "MIT",
     "authors": "microsoft",
     "main": "out/index",
+    "typings": "index.d.ts",
     "scripts": {
         "compile": "tsc -p ./",
         "build": "tsc -p ./",
