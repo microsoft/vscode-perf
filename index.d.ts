@@ -35,9 +35,14 @@ export interface Options {
 	readonly file?: string;
 
 	/**
+	 * logs verbose output to the console when errors occur
+	 */
+	readonly verbose?: boolean;
+
+	/**
 	 * file in which the profile data shall be recorded
 	 */
 	readonly profAppendTimers?: string;
 }
 
-export function run(options: Options): Promise<void>;
+export function run(options?: Options): Promise<void>;

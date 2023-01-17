@@ -14,6 +14,7 @@ interface Options extends OptionValues {
 	runs?: string;
 	folder?: string;
 	file?: string;
+	verbose?: boolean;
 	profAppendTimers?: string;
 }
 
@@ -27,6 +28,7 @@ export async function run(options?: Options): Promise<void> {
 			.option('--folder <folder>', 'folder to open in VSCode while measuring the performance')
 			.option('--file <file>', 'file to open in VSCode while measuring the performance')
 			.option('--runs <number-of-runs>', 'number of times to run the performance measurement')
+			.option('-v, --verbose', 'logs verbose output to the console when errors occur')
 			.addOption(new Option('--prof-append-timers <prof-append-timers>').hideHelp(true));
 
 		options = program.parse(process.argv).opts<Options>();
