@@ -40,4 +40,4 @@ export interface Options {
 	readonly profAppendTimers?: string;
 }
 
-export function run(options: Options[]): Promise<void>;
+export function run(options: Options): Promise<void>;
