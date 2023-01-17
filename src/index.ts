@@ -4,47 +4,43 @@
  *--------------------------------------------------------------------------------------------*/
 
 import chalk from 'chalk';
-import { Option, program } from 'commander';
+import { Option, OptionValues, program } from 'commander';
 import { launch } from './perf';
 
-export async function run(args?: string[]): Promise<void> {
+interface Options extends OptionValues {
+	build: string;
+	durationMarkers?: string | string[];
+	durationMarkersFile: string;
+	runs?: string;
+	folder?: string;
+	file?: string;
+	profAppendTimers?: string;
+}
 
-	if (args) {
-		args.splice(0, 0, '', ''); // add dummy values for node and script name
-	} else {
-		args = process.argv;
+export async function run(options?: Options): Promise<void> {
+
+	if (!options) {
+		program
+			.requiredOption('-b, --build <build>', 'executable location of the build to measure the performance of')
+			.option('-m, --duration-markers <duration-markers>', 'pair of markers separated by `-` between which the duration has to be measured. Eg: `code/didLoadWorkbenchMain-code/didLoadExtensions')
+			.option('--duration-markers-file <duration-markers-file>', 'file in which the performance measurements shall be recorded')
+			.option('--folder <folder>', 'folder to open in VSCode while measuring the performance')
+			.option('--file <file>', 'file to open in VSCode while measuring the performance')
+			.option('--runs <number-of-runs>', 'number of times to run the performance measurement')
+			.addOption(new Option('--prof-append-timers <prof-append-timers>').hideHelp(true));
+
+		options = program.parse(process.argv).opts<Options>();
 	}
-
-	interface Opts {
-		build: string;
-		durationMarkers?: string | string[];
-		durationMarkersFile: string;
-		runs?: string;
-		folder?: string;
-		file?: string;
-		profAppendTimers?: string;
-	}
-
-	program
-		.requiredOption('-b, --build <build>', 'executable location of the build to measure the performance of')
-		.option('-m, --duration-markers <duration-markers>', 'pair of markers separated by `-` between which the duration has to be measured. Eg: `code/didLoadWorkbenchMain-code/didLoadExtensions')
-		.option('--duration-markers-file <duration-markers-file>', 'file in which the performance measurements shall be recorded')
-		.option('--folder <folder>', 'folder to open in VSCode while measuring the performance')
-		.option('--file <file>', 'file to open in VSCode while measuring the performance')
-		.option('--runs <number-of-runs>', 'number of times to run the performance measurement')
-		.addOption(new Option('--prof-append-timers <prof-append-timers>').hideHelp(true));
-
-	const opts: Opts = program.parse(args).opts();
 
 	try {
 		await launch({
-			build: opts.build,
-			durationMarkers: opts.durationMarkers ? Array.isArray(opts.durationMarkers) ? opts.durationMarkers : [opts.durationMarkers] : undefined,
-			durationMarkersFile: opts.durationMarkersFile,
-			runs: opts.runs ? parseInt(opts.runs) : undefined,
-			folderToOpen: opts.folder,
-			fileToOpen: opts.file,
-			profAppendTimers: opts.profAppendTimers
+			build: options.build,
+			durationMarkers: options.durationMarkers ? Array.isArray(options.durationMarkers) ? options.durationMarkers : [options.durationMarkers] : undefined,
+			durationMarkersFile: options.durationMarkersFile,
+			runs: options.runs ? parseInt(options.runs) : undefined,
+			folderToOpen: options.folder,
+			fileToOpen: options.file,
+			profAppendTimers: options.profAppendTimers
 		});
 	} catch (error) {
 		console.log(`${chalk.red('[error]')} ${error}`);
