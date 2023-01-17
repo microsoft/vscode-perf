@@ -16,6 +16,7 @@ export interface Options {
 	folderToOpen?: string;
 	fileToOpen?: string;
 	profAppendTimers?: string;
+	verbose?: boolean;
 }
 
 export async function launch(options: Options) {
@@ -49,7 +50,7 @@ export async function launch(options: Options) {
 		codeArgs.push(options.profAppendTimers);
 	}
 
-	const markers: string[] = options.durationMarkers?.length ? [...options.durationMarkers]: ['ellapsed'];
+	const markers: string[] = options.durationMarkers?.length ? [...options.durationMarkers] : ['ellapsed'];
 	for (const marker of markers) {
 		codeArgs.push('--prof-duration-markers');
 		codeArgs.push(marker);
@@ -66,20 +67,43 @@ export async function launch(options: Options) {
 	const runs = options.runs ?? PERFORMANCE_RUNS;
 	const durations = new Map<string, number[]>();
 
+	let childProcess: cp.ChildProcessWithoutNullStreams | undefined;
+	process.on('exit', () => {
+		if (childProcess) {
+			childProcess.kill();
+		}
+	});
+
 	for (let i = 0; i < runs; i++) {
 
 		console.log(`${chalk.gray('[perf]')} running session ${chalk.green(`${i + 1}`)} of ${chalk.green(`${runs}`)}...`);
 
-		const childProcess = cp.spawn(options.build, codeArgs);
-		await (new Promise<void>(resolve => childProcess.on('exit', () => resolve())));
+		childProcess = cp.spawn(options.build, codeArgs);
+		childProcess.stdout.on('data', data => {
+			if (options.verbose) {
+				console.log(`${chalk.gray('[electron]')}: ${data.toString()}`);
+			}
+		});
+		childProcess.stderr.on('data', data => {
+			if (options.verbose) {
+				console.log(`${chalk.red('[electron]')}: ${data.toString()}`);
+			}
+		});
+		await (new Promise<void>(resolve => childProcess?.on('exit', () => resolve())));
+		childProcess = undefined;
 
-		const lines = fs.readFileSync(perfFile, 'utf8').split('\n');
-		let content = '';
-		for (let j = lines.length - 1; j >= 0 && !content; j--) {
-			content = lines[j];
-		}
-		for (const marker of markers) {
-			logMarker(content, marker, durations);
+		if (fs.existsSync(perfFile)) {
+			const content = readLastLineSync(perfFile);
+			for (const marker of markers) {
+				logMarker(content, marker, durations);
+			}
+		} else if (options.profAppendTimers) {
+			const content = readLastLineSync(options.profAppendTimers);
+			const marker = 'ellapsed';
+			logMarker(`${marker}	${content}`, marker, durations);
+		} else {
+			console.error('No perf file found');
+			process.exit(1);
 		}
 	}
 
@@ -88,7 +112,6 @@ export async function launch(options: Options) {
 		const markerDurations = durations.get(marker) ?? [];
 		console.log(`${chalk.gray('[perf]')} ${marker}: ${chalk.green(`${markerDurations[0]}ms`)} (fastest), ${chalk.green(`${markerDurations[markerDurations.length - 1]}ms`)} (slowest), ${chalk.green(`${markerDurations[Math.floor(markerDurations.length / 2)]}ms`)} (median)`);
 	}
-
 }
 
 function logMarker(content: string, marker: string, durations: Map<string, number[]>): void {
@@ -106,6 +129,18 @@ function logMarker(content: string, marker: string, durations: Map<string, numbe
 	durations.set(marker, markerDurations);
 
 	console.log(`${chalk.gray('[perf]')} ${marker}: ${chalk.green(`${duration}ms`)} (current), ${chalk.green(`${markerDurations[0]}ms`)} (fastest), ${chalk.green(`${markerDurations[markerDurations.length - 1]}ms`)} (slowest), ${chalk.green(`${markerDurations[Math.floor(markerDurations.length / 2)]}ms`)} (median)`);
+}
+
+function readLastLineSync(path: string): string {
+	const contents = fs.readFileSync(path, 'utf8');
+	const lines = contents.split(/\r?\n/);
+
+	let lastLine: string | undefined;
+	while (!lastLine && lines.length > 0) {
+		lastLine = lines.pop();
+	}
+
+	return lastLine ?? '';
 }
 
 
