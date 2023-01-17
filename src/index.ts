@@ -10,7 +10,7 @@ import { launch } from './perf';
 interface Options extends OptionValues {
 	build: string;
 	durationMarkers?: string | string[];
-	durationMarkersFile: string;
+	durationMarkersFile?: string;
 	runs?: string;
 	folder?: string;
 	file?: string;

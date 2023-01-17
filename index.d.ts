@@ -17,7 +17,7 @@ export interface Options {
 	/**
 	 * file in which the performance measurements shall be recorded
 	 */
-	readonly durationMarkersFile: string;
+	readonly durationMarkersFile?: string;
 
 	/**
 	 * number of times to run the performance measurement
