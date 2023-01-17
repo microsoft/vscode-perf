@@ -1,6 +1,6 @@
 {
     "name": "@vscode/vscode-perf",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "description": "Tooling for evaluating performance of VS Code",
     "repository": {
         "type": "git",
