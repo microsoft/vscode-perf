@@ -3,11 +3,33 @@
  *  Licensed under the MIT License. See LICENSE in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+export enum Quality {
+	/**
+	 * Stable quality
+	 */
+	Stable = 'stable',
+
+	/**
+	 * Insider quality
+	 */
+	Insider = 'insider',
+
+	/**
+	 * Exploration quality
+	 */
+	Exploration = 'exploration'
+}
+
 export interface Options {
 	/**
-	 * executable location of the build to measure the performance of
+	 * quality or the location of the build to measure the performance of. Location can be a path to a build or a URL to a build
 	 */
-	readonly build: string;
+	readonly build: string | Quality;
+
+	/**
+	 * Include unreleased builds in the search for the build to measure the performance of. Defaults to false.
+	 */
+	readonly unreleased?: boolean;
 
 	/**
 	 * pair of markers separated by `-` between which the duration has to be measured. Eg: `code/didLoadWorkbenchMain-code/didLoadExtensions

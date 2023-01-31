@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See LICENSE in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { EXTENSIONS_FOLDER, INSIDERS_VSCODE_DEV_HOST_NAME, PERFORMANCE_FILE, PERFORMANCE_RUNS, ROOT, Runtime, USER_DATA_FOLDER, VSCODE_DEV_HOST_NAME } from "./constants";
+import { DATA_FOLDER, EXTENSIONS_FOLDER, INSIDERS_VSCODE_DEV_HOST_NAME, PERFORMANCE_FILE, PERFORMANCE_RUNS, ROOT, Runtime, USER_DATA_FOLDER, VSCODE_DEV_HOST_NAME } from "./constants";
 import * as fs from 'fs';
 import * as cp from 'child_process';
 import playwright from 'playwright';
@@ -29,19 +29,19 @@ export interface Options {
 export async function launch(options: Options) {
 
 	try {
-		fs.rmSync(ROOT, { recursive: true });
+		fs.rmSync(DATA_FOLDER, { recursive: true });
 	} catch (error) { }
-	fs.mkdirSync(ROOT, { recursive: true });
+	fs.mkdirSync(DATA_FOLDER, { recursive: true });
 
 	const runs = options.runs ?? PERFORMANCE_RUNS;
 	const durations = new Map<string, number[]>();
 	const perfFile = options.durationMarkersFile ?? PERFORMANCE_FILE;
 	const markers = options.durationMarkers?.length ? [...options.durationMarkers] : ['ellapsed'];
 	const playwrightStorageState = options.runtime === Runtime.Web ? await preparePlaywright(options) : undefined;
-	
+
 	for (let i = 0; i < runs; i++) {
 		console.log(`${chalk.gray('[perf]')} running session ${chalk.green(`${i + 1}`)} of ${chalk.green(`${runs}`)}...`);
-		
+
 		let timedOut = false;
 		let promise: Promise<string | undefined>;
 		const abortController = new AbortController();
@@ -75,7 +75,7 @@ export async function launch(options: Options) {
 				console.log(`${chalk.red('[perf]')} no perf data found.`);
 			}
 		}
-		
+
 	}
 
 	console.log(`${chalk.gray('[perf]')} ${chalk.blueBright('Summary')}:`);
