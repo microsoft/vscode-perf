@@ -12,6 +12,8 @@ export const USER_DATA_FOLDER = join(ROOT, 'user-data-dir');
 export const EXTENSIONS_FOLDER = join(ROOT, 'extensions-dir');
 export const PERFORMANCE_FILE = join(ROOT, 'startup-perf.txt');
 export const PERFORMANCE_RUNS = 10;
+export const VSCODE_DEV_HOST_NAME = 'vscode.dev';
+export const INSIDERS_VSCODE_DEV_HOST_NAME = 'insiders.vscode.dev';
 
 export enum Platform {
     MacOSX64 = 1,
@@ -20,6 +22,11 @@ export enum Platform {
     LinuxArm,
     WindowsX64,
     WindowsArm
+}
+
+export enum Runtime {
+    Web,
+    Desktop
 }
 
 export const platform = (() => {
