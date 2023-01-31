@@ -1,6 +1,6 @@
 {
     "name": "@vscode/vscode-perf",
-    "version": "0.0.5",
+    "version": "0.0.6",
     "description": "Tooling for evaluating performance of VS Code",
     "repository": {
         "type": "git",
@@ -28,10 +28,16 @@
     },
     "dependencies": {
         "chalk": "^4.x",
-        "commander": "^9.4.0"
+        "commander": "^9.4.0",
+        "cookie": "^0.5.0",
+        "js-base64": "^3.7.4",
+        "node-fetch": "2.6.8",
+        "playwright": "^1.29.2"
     },
     "devDependencies": {
-        "@types/node": "16.x",
-        "typescript": "4.8.x"
+        "@types/node": "18.x",
+        "typescript": "4.8.x",
+        "@types/node-fetch": "^2.6.2",
+        "@types/cookie": "^0.5.1"
     }
 }

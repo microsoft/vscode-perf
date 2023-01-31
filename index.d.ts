@@ -43,6 +43,16 @@ export interface Options {
 	 * file in which the profile data shall be recorded
 	 */
 	readonly profAppendTimers?: string;
+
+	/**
+	 * whether to measure the performance of desktop or web runtime. Defaults to desktop.
+	 */
+	readonly runtime?: 'desktop' | 'web';
+
+	/**
+	 * a GitHub token of scopes 'repo', 'workflow', 'user:email', 'read:user' to enable additional performance tests targetting web
+	 */
+	readonly token?: string;
 }
 
 export function run(options?: Options): Promise<void>;
