@@ -7,8 +7,9 @@ import { dirname, join } from 'path';
 import { BUILDS_FOLDER, Platform, platform, Quality, Runtime } from './constants';
 import { get } from 'https';
 import chalk from "chalk";
-import { createWriteStream, existsSync, promises, rmSync } from 'fs';
+import { createWriteStream, existsSync, promises } from 'fs';
 import { spawnSync } from 'child_process';
+import fetch, { Headers } from 'node-fetch';
 
 interface IBuildMetadata {
 	url: string;
@@ -204,25 +205,17 @@ function getBuildApiName(runtime: Runtime): string {
 
 async function fetchBuildMetadata(runtime: Runtime, quality: Quality, unreleased?: boolean): Promise<IBuildMetadata> {
 	const buildApiName = getBuildApiName(runtime);
-	const { version } = await jsonGet<{ version: string }>(`https://update.code.visualstudio.com/api/latest/${buildApiName}/${quality}`)
-	return jsonGet<IBuildMetadata>(`https://update.code.visualstudio.com/api/versions/commit:${version}/${buildApiName}/${quality}`);
+	const headers = unreleased ? new Headers({ 'x-vscode-released': 'false' }) : undefined;
+	const { version } = await jsonGet<{ version: string }>(`https://update.code.visualstudio.com/api/latest/${buildApiName}/${quality}`, headers)
+	return jsonGet<IBuildMetadata>(`https://update.code.visualstudio.com/api/versions/commit:${version}/${buildApiName}/${quality}`, headers);
 }
 
-function jsonGet<T>(url: string): Promise<T> {
-	return new Promise((resolve, reject) => {
-		get(url, res => {
-			if (res.statusCode !== 200) {
-				reject(`Failed to get response from update server (code: ${res.statusCode}, message: ${res.statusMessage})`);
-				return;
-			}
-
-			let data = '';
-
-			res.on('data', chunk => data += chunk);
-			res.on('end', () => resolve(JSON.parse(data)));
-			res.on('error', err => reject(err));
-		});
-	});
+async function jsonGet<T>(url: string, headers?: Headers): Promise<T> {
+	const authResponse = await fetch(url, { method: 'GET', headers });
+	if (!authResponse.ok) {
+		throw new Error(`Failed to get response from update server: ${authResponse.status} ${authResponse.statusText}`);
+	}
+	return await authResponse.json();
 }
 
 async function fileGet(url: string, path: string): Promise<void> {
