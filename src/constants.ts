@@ -8,9 +8,13 @@ import { join } from 'path';
 
 export const ROOT = join(tmpdir(), 'vscode-perf');
 
-export const USER_DATA_FOLDER = join(ROOT, 'user-data-dir');
-export const EXTENSIONS_FOLDER = join(ROOT, 'extensions-dir');
+export const BUILDS_FOLDER = join(ROOT, '.builds');
+
+export const DATA_FOLDER = join(ROOT, '.data');
+export const USER_DATA_FOLDER = join(DATA_FOLDER, 'data');
+export const EXTENSIONS_FOLDER = join(DATA_FOLDER, 'extensions');
 export const PERFORMANCE_FILE = join(ROOT, 'startup-perf.txt');
+
 export const PERFORMANCE_RUNS = 10;
 export const VSCODE_DEV_HOST_NAME = 'vscode.dev';
 export const INSIDERS_VSCODE_DEV_HOST_NAME = 'insiders.vscode.dev';
@@ -25,8 +29,14 @@ export enum Platform {
 }
 
 export enum Runtime {
-    Web,
+    Web = 1,
     Desktop
+}
+
+export enum Quality {
+    Exploration = 'exploration',
+    Insider = 'insider',
+    Stable = 'stable',
 }
 
 export const platform = (() => {
