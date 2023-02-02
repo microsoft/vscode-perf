@@ -34,9 +34,8 @@ export async function installBuild(runtime: Runtime, quality: Quality, unrelease
 
 	if (!existsSync(path)) {
 		// Download
-		const url = `https://az764295.vo.msecnd.net/${quality}/${buildMetadata.version}/${buildName}`;
-		console.log(`${chalk.gray('[build]')} downloading build from ${chalk.green(url)}...`);
-		await fileGet(url, path);
+		console.log(`${chalk.gray('[build]')} downloading build from ${chalk.green(buildMetadata.url)}...`);
+		await fileGet(buildMetadata.url, path);
 
 		// Unzip
 		console.log(`${chalk.gray('[build]')} unzipping build to ${chalk.green(destination)}...`);
@@ -127,7 +126,7 @@ function getBuildArchiveName(runtime: Runtime, buildMetadata: IBuildMetadata): s
 					return 'VSCode-darwin-arm64.zip';
 				case Platform.LinuxX64:
 				case Platform.LinuxArm:
-					return buildMetadata.url.split('/').pop()!; // e.g. https://az764295.vo.msecnd.net/insider/807bf598bea406dcb272a9fced54697986e87768/code-insider-x64-1639979337.tar.gz
+					return buildMetadata.url.split('/').pop()!;
 				case Platform.WindowsX64:
 				case Platform.WindowsArm: {
 					return platform === Platform.WindowsX64 ? `VSCode-win32-x64-${buildMetadata.productVersion}.zip` : `VSCode-win32-arm64-${buildMetadata.productVersion}.zip`;
@@ -206,8 +205,7 @@ function getBuildApiName(runtime: Runtime): string {
 async function fetchBuildMetadata(runtime: Runtime, quality: Quality, unreleased?: boolean): Promise<IBuildMetadata> {
 	const buildApiName = getBuildApiName(runtime);
 	const headers = unreleased ? new Headers({ 'x-vscode-released': 'false' }) : undefined;
-	const { version } = await jsonGet<{ version: string }>(`https://update.code.visualstudio.com/api/latest/${buildApiName}/${quality}`, headers)
-	return jsonGet<IBuildMetadata>(`https://update.code.visualstudio.com/api/versions/commit:${version}/${buildApiName}/${quality}`, headers);
+	return jsonGet<IBuildMetadata>(`https://update.code.visualstudio.com/api/update/${buildApiName}/${quality}/latest`, headers);
 }
 
 async function jsonGet<T>(url: string, headers?: Headers): Promise<T> {
