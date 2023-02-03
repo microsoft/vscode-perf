@@ -38,7 +38,7 @@ export async function run(options?: Options): Promise<void> {
 			.option('-v, --verbose', 'logs verbose output to the console when errors occur')
 			.option('-t, --token <token>', `a GitHub token of scopes 'repo', 'workflow', 'user:email', 'read:user' to enable additional performance tests targetting web`)
 			.addOption(new Option('-r, --runtime <runtime>', 'whether to measure the performance of desktop or web runtime').choices(['desktop', 'web']))
-			.addOption(new Option('--prof-append-timers <prof-append-timers>').hideHelp(true));
+			.option('--prof-append-timers <prof-append-timers>', 'Measures the time it took to create the workbench and records it in the passed file in a pretty verbose format.');
 
 		options = program.parse(process.argv).opts<Options>();
 	}
@@ -48,14 +48,7 @@ export async function run(options?: Options): Promise<void> {
 		mkdirSync(ROOT, { recursive: true });
 
 		const runtime = options.runtime === 'web' ? Runtime.Web : Runtime.Desktop;
-		let build: string | Quality = options.build;
-		switch (build) {
-			case 'stable':
-			case 'insider':
-			case 'exploration':
-				build = await installBuild(runtime, build as Quality, options.unreleased);
-				break;
-		}
+		const build = await getBuild(options, runtime);
 		await launch({
 			build,
 			runtime,
@@ -71,4 +64,25 @@ export async function run(options?: Options): Promise<void> {
 		console.log(`${chalk.red('[error]')} ${error}`);
 		process.exit(1);
 	}
+}
+
+async function getBuild(options: Options, runtime: Runtime): Promise<string> {
+	let build: string | Quality = options.build;
+	if (runtime === Runtime.Web) {
+		switch (build) {
+			case 'stable':
+				return'https://vscode.dev';
+			case 'insider':
+			case 'exploration':
+				return 'https://insiders.vscode.dev';
+		}
+	} else {
+		switch (build) {
+			case 'stable':
+			case 'insider':
+			case 'exploration':
+				return installBuild(runtime, build as Quality, options.unreleased);
+		}
+	}
+	return build;
 }
