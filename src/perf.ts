@@ -35,7 +35,7 @@ export async function launch(options: Options) {
 
 	const runs = options.runs ?? PERFORMANCE_RUNS;
 	const durations = new Map<string, number[]>();
-	const perfFile = options.durationMarkersFile ?? PERFORMANCE_FILE;
+	const perfFile = (options.runtime === Runtime.Web ? options.durationMarkersFile ?? options.profAppendTimers : options.durationMarkersFile) ?? PERFORMANCE_FILE;
 	const markers = options.durationMarkers?.length ? [...options.durationMarkers] : ['ellapsed'];
 	const playwrightStorageState = options.runtime === Runtime.Web ? await preparePlaywright(options) : undefined;
 
