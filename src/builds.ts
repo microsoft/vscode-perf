@@ -205,7 +205,9 @@ function getBuildApiName(runtime: Runtime): string {
 async function fetchBuildMetadata(runtime: Runtime, quality: Quality, unreleased?: boolean): Promise<IBuildMetadata> {
 	const buildApiName = getBuildApiName(runtime);
 	const headers = unreleased ? new Headers({ 'x-vscode-released': 'false' }) : undefined;
-	return jsonGet<IBuildMetadata>(`https://update.code.visualstudio.com/api/update/${buildApiName}/${quality}/latest`, headers);
+	const result = await jsonGet<IBuildMetadata>(`https://update.code.visualstudio.com/api/update/${buildApiName}/${quality}/latest`, headers);
+	result.url = join(dirname(result.url), getBuildArchiveName(runtime, result));
+	return result;
 }
 
 async function jsonGet<T>(url: string, headers?: Headers): Promise<T> {
