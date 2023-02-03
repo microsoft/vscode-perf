@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See LICENSE in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { dirname, join } from 'path';
+import { dirname, join, posix } from 'path';
 import { BUILDS_FOLDER, Platform, platform, Quality, Runtime } from './constants';
 import { get } from 'https';
 import chalk from "chalk";
@@ -206,7 +206,7 @@ async function fetchBuildMetadata(runtime: Runtime, quality: Quality, unreleased
 	const buildApiName = getBuildApiName(runtime);
 	const headers = unreleased ? new Headers({ 'x-vscode-released': 'false' }) : undefined;
 	const result = await jsonGet<IBuildMetadata>(`https://update.code.visualstudio.com/api/update/${buildApiName}/${quality}/latest`, headers);
-	result.url = join(dirname(result.url), getBuildArchiveName(runtime, result));
+	result.url = posix.join(posix.dirname(result.url), getBuildArchiveName(runtime, result));
 	return result;
 }
 
