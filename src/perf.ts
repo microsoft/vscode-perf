@@ -99,7 +99,6 @@ async function launchDesktop(options: Options, perfFile: string, markers: string
 		'--disable-extensions',
 		'--disable-workspace-trust',
 		'--disable-features=CalculateNativeWinOcclusion',
-		'--wait',
 		'--prof-duration-markers-file',
 		perfFile,
 	];
