@@ -22,6 +22,7 @@ interface Options extends OptionValues {
 	profAppendTimers?: string;
 	runtime?: string;
 	token?: string;
+	runtimeTraceCategories?: string;
 }
 
 export async function run(options?: Options): Promise<void> {
@@ -38,7 +39,8 @@ export async function run(options?: Options): Promise<void> {
 			.option('-v, --verbose', 'logs verbose output to the console when errors occur')
 			.option('-t, --token <token>', `a GitHub token of scopes 'repo', 'workflow', 'user:email', 'read:user' to enable additional performance tests targetting web`)
 			.addOption(new Option('-r, --runtime <runtime>', 'whether to measure the performance of desktop or web runtime').choices(['desktop', 'web']))
-			.option('--prof-append-timers <prof-append-timers>', 'Measures the time it took to create the workbench and prints it in verbose and pretty format in the passed file. `--duration-markers` and `--duration-markers-file` are ignored when this option is passed.');
+			.option('--prof-append-timers <prof-append-timers>', 'Measures the time it took to create the workbench and prints it in verbose and pretty format in the passed file. `--duration-markers` and `--duration-markers-file` are ignored when this option is passed.')
+			.option('--runtime-trace-categories <runtime-trace-categories>', 'Categories to collect runtime traces. Values can be found in chrome://tracing or edge://tracing');
 
 		options = program.parse(process.argv).opts<Options>();
 	}
@@ -59,6 +61,7 @@ export async function run(options?: Options): Promise<void> {
 			fileToOpen: options.file,
 			profAppendTimers: options.profAppendTimers,
 			token: options.token,
+			runtimeTraceCategories: options.runtimeTraceCategories,
 		});
 	} catch (error) {
 		console.log(`${chalk.red('[error]')} ${error}`);
