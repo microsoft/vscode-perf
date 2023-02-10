@@ -14,6 +14,7 @@ export const DATA_FOLDER = join(ROOT, '.data');
 export const USER_DATA_FOLDER = join(DATA_FOLDER, 'data');
 export const EXTENSIONS_FOLDER = join(DATA_FOLDER, 'extensions');
 export const PERFORMANCE_FILE = join(ROOT, 'startup-perf.txt');
+export const RUNTIME_TRACE_FOLDER = join(ROOT, 'vscode-runtime-traces');
 
 export const PERFORMANCE_RUNS = 10;
 export const VSCODE_DEV_HOST_NAME = 'vscode.dev';

@@ -3,9 +3,11 @@
  *  Licensed under the MIT License. See LICENSE in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { DATA_FOLDER, EXTENSIONS_FOLDER, INSIDERS_VSCODE_DEV_HOST_NAME, PERFORMANCE_FILE, PERFORMANCE_RUNS, ROOT, Runtime, USER_DATA_FOLDER, VSCODE_DEV_HOST_NAME } from "./constants";
+import { DATA_FOLDER, EXTENSIONS_FOLDER, INSIDERS_VSCODE_DEV_HOST_NAME, PERFORMANCE_FILE, PERFORMANCE_RUNS, ROOT, Runtime, USER_DATA_FOLDER, VSCODE_DEV_HOST_NAME, RUNTIME_TRACE_FOLDER } from "./constants";
 import * as fs from 'fs';
 import * as cp from 'child_process';
+import { join } from 'path';
+import { tmpdir } from 'os';
 import playwright from 'playwright';
 import chalk from "chalk";
 import { IPlaywrightStorageState } from "./types";
@@ -24,6 +26,7 @@ export interface Options {
 	profAppendTimers?: string;
 	verbose?: boolean;
 	token?: string;
+	runtimeTraceCategories?: string;
 }
 
 export async function launch(options: Options) {
@@ -32,6 +35,12 @@ export async function launch(options: Options) {
 		fs.rmSync(DATA_FOLDER, { recursive: true });
 	} catch (error) { }
 	fs.mkdirSync(DATA_FOLDER, { recursive: true });
+
+	if (options.runtimeTraceCategories) {
+		try {
+			fs.mkdirSync(RUNTIME_TRACE_FOLDER);
+		} catch (error) { }
+	}
 
 	const runs = options.runs ?? PERFORMANCE_RUNS;
 	const durations = new Map<string, number[]>();
@@ -120,6 +129,13 @@ async function launchDesktop(options: Options, perfFile: string, markers: string
 
 	if (options.fileToOpen) {
 		codeArgs.push(options.fileToOpen);
+	}
+
+	if (options.runtimeTraceCategories) {
+		codeArgs.push(`--enable-tracing="${options.runtimeTraceCategories}"`);
+		const traceFilePath = join(RUNTIME_TRACE_FOLDER, `chrometrace_${new Date().getTime()}.log`);
+		console.log(`${chalk.gray('[perf]')} saving chromium trace file at ${chalk.green(`${traceFilePath}`)}`);
+		codeArgs.push(`--trace-startup-file=${traceFilePath}`);
 	}
 
 	let childProcess: cp.ChildProcessWithoutNullStreams | undefined;
