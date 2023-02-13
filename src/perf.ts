@@ -131,7 +131,7 @@ async function launchDesktop(options: Options, perfFile: string, markers: string
 	}
 
 	if (options.runtimeTraceCategories) {
-		codeArgs.push(`--enable-tracing="${options.runtimeTraceCategories}"`);
+		codeArgs.push(`--enable-tracing=${options.runtimeTraceCategories}`);
 		const traceFilePath = join(RUNTIME_TRACE_FOLDER, `chrometrace_${new Date().getTime()}.log`);
 		console.log(`${chalk.gray('[perf]')} saving chromium trace file at ${chalk.green(`${traceFilePath}`)}`);
 		codeArgs.push(`--trace-startup-file=${traceFilePath}`);
