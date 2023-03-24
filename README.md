@@ -2,6 +2,8 @@
 
 Tooling for evaluating performance of VSCode.
 
+[![Build Status](https://dev.azure.com/monacotools/Monaco/_apis/build/status/npm/vscode/vscode-perf?repoName=microsoft%2Fvscode-perf&branchName=main)](https://dev.azure.com/monacotools/Monaco/_build/latest?definitionId=451&repoName=microsoft%2Fvscode-perf&branchName=main)
+
 ## Requirements
 
 - [Node.js](https://nodejs.org/en/) at least `16.x.x`
