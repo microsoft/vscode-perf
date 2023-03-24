@@ -27,6 +27,7 @@ export interface Options {
 	verbose?: boolean;
 	token?: string;
 	runtimeTraceCategories?: string;
+	disableCachedData?: boolean;
 }
 
 export async function launch(options: Options) {
@@ -142,6 +143,10 @@ async function launchDesktop(options: Options, perfFile: string, markers: string
 		const traceFilePath = join(RUNTIME_TRACE_FOLDER, `chrometrace_${new Date().getTime()}.log`);
 		console.log(`${chalk.gray('[perf]')} saving chromium trace file at ${chalk.green(`${traceFilePath}`)}`);
 		codeArgs.push(`--trace-startup-file=${traceFilePath}`);
+	}
+
+	if (options.disableCachedData) {
+		codeArgs.push('--no-cached-data');
 	}
 
 	let childProcess: cp.ChildProcessWithoutNullStreams | undefined;
