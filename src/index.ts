@@ -7,11 +7,12 @@ import chalk from 'chalk';
 import { Option, OptionValues, program } from 'commander';
 import { mkdirSync, rmSync } from 'fs';
 import { installBuild } from './builds';
-import { Quality, ROOT, Runtime } from './constants';
+import { Commit, Quality, ROOT, Runtime } from './constants';
 import { launch } from './perf';
 
 interface Options extends OptionValues {
 	build: string | Quality;
+	commit?: Commit;
 	unreleased?: boolean;
 	durationMarkers?: string | string[];
 	durationMarkersFile?: string;
@@ -31,6 +32,7 @@ export async function run(options?: Options): Promise<void> {
 	if (!options) {
 		program
 			.requiredOption('-b, --build <build>', 'quality or the location of the build to measure the performance of. Location can be a path to a build or a URL to a build. Quality options: `stable`, `insider`, `exploration`.')
+			.option('-c, --commit <commit|latest>', 'commit hash of a specific build to test or "latest" released build (default)')
 			.option('--unreleased', 'Include unreleased builds in the search for the build to measure the performance of.')
 			.option('-m, --duration-markers <duration-markers>', 'pair of markers separated by `-` between which the duration has to be measured. Eg: `code/didLoadWorkbenchMain-code/didLoadExtensions')
 			.option('--duration-markers-file <duration-markers-file>', 'file in which the performance measurements shall be recorded')
@@ -75,19 +77,17 @@ export async function run(options?: Options): Promise<void> {
 async function getBuild(options: Options, runtime: Runtime): Promise<string> {
 	let build: string | Quality = options.build;
 	if (runtime === Runtime.Web) {
-		switch (build) {
-			case 'stable':
-				return'https://vscode.dev';
-			case 'insider':
-			case 'exploration':
-				return 'https://insiders.vscode.dev';
+		let url = build === 'stable' ? 'https://vscode.dev' : 'https://insiders.vscode.dev';
+		if (typeof options?.commit === 'string' && options.commit !== 'latest') {
+			url += `?vscode-version=${options.commit}`;
 		}
+		return url;
 	} else {
 		switch (build) {
 			case 'stable':
 			case 'insider':
 			case 'exploration':
-				return installBuild(runtime, build as Quality, options.unreleased);
+				return installBuild(runtime, build as Quality, options.commit ?? 'latest', options.unreleased);
 		}
 	}
 	return build;

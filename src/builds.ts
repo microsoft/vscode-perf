@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { dirname, join, posix } from 'path';
-import { BUILDS_FOLDER, Platform, platform, Quality, Runtime } from './constants';
+import { BUILDS_FOLDER, Commit, Platform, platform, Quality, Runtime } from './constants';
 import { get } from 'https';
 import chalk from "chalk";
 import { createWriteStream, existsSync, promises } from 'fs';
@@ -17,9 +17,9 @@ interface IBuildMetadata {
 	version: string;
 }
 
-export async function installBuild(runtime: Runtime, quality: Quality, unreleased?: boolean): Promise<string> {
+export async function installBuild(runtime: Runtime, quality: Quality, commit: Commit, unreleased?: boolean): Promise<string> {
 
-	const buildMetadata = await fetchBuildMetadata(runtime, quality, unreleased);
+	const buildMetadata = await fetchBuildMetadata(runtime, quality, commit, unreleased);
 	const buildName = getBuildArchiveName(runtime, buildMetadata);
 	const path = join(getBuildPath(buildMetadata.version), buildName);
 	let destination: string;
@@ -202,10 +202,17 @@ function getBuildApiName(runtime: Runtime): string {
 	}
 }
 
-async function fetchBuildMetadata(runtime: Runtime, quality: Quality, unreleased?: boolean): Promise<IBuildMetadata> {
+async function fetchBuildMetadata(runtime: Runtime, quality: Quality, commit: Commit, unreleased?: boolean): Promise<IBuildMetadata> {
 	const buildApiName = getBuildApiName(runtime);
-	const headers = unreleased ? new Headers({ 'x-vscode-released': 'false' }) : undefined;
-	const result = await jsonGet<IBuildMetadata>(`https://update.code.visualstudio.com/api/update/${buildApiName}/${quality}/latest`, headers);
+	let url: string;
+	let headers: Headers | undefined = undefined;
+	if (commit === 'latest') {
+		url = `https://update.code.visualstudio.com/api/update/${buildApiName}/${quality}/latest`;
+		headers = unreleased ? new Headers({ 'x-vscode-released': 'false' }) : undefined;
+	} else {
+		url = `https://update.code.visualstudio.com/api/versions/commit:${commit}/${buildApiName}/${quality}`;
+	}
+	const result = await jsonGet<IBuildMetadata>(url, headers);
 	result.url = posix.join(posix.dirname(result.url), getBuildArchiveName(runtime, result));
 	return result;
 }
