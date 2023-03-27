@@ -55,6 +55,10 @@ export async function launch(options: Options) {
 		let timedOut = false;
 		let promise: Promise<string | undefined>;
 		const abortController = new AbortController();
+		process.on('SIGINT', () => {
+			abortController.abort();
+			process.exit(128 + 2);
+		});
 
 		switch (options.runtime) {
 			case Runtime.Desktop:
