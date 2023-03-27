@@ -69,11 +69,14 @@ export async function launch(options: Options) {
 				break;
 		}
 
+		let handle;
 		const content = await Promise.race([
-			new Promise<void>(resolve => setTimeout(() => {
-				timedOut = true;
-				resolve();
-			}, PERFORMANCE_RUN_TIMEOUT)),
+			new Promise<void>(resolve => {
+				handle = setTimeout(() => {
+					timedOut = true;
+					resolve();
+				}, PERFORMANCE_RUN_TIMEOUT)
+			}),
 			promise
 		]);
 
@@ -81,6 +84,7 @@ export async function launch(options: Options) {
 			console.log(`${chalk.red('[perf]')} timeout after ${chalk.green(`${PERFORMANCE_RUN_TIMEOUT}ms`)}`);
 			abortController.abort();
 		} else {
+			clearTimeout(handle);
 			if (content) {
 				for (const marker of markers) {
 					logMarker(content, marker, durations);
@@ -271,7 +275,7 @@ function logMarker(content: string, marker: string, durations: Map<string, numbe
 	markerDurations.push(duration);
 	markerDurations.sort((/** @type {number} */ a, /** @type {number} */ b) => a - b);
 	durations.set(marker, markerDurations);
-	
+
 	const middleIndex = Math.floor(markerDurations.length / 2);
 	const median = markerDurations.length % 2 === 0 ? (markerDurations[middleIndex - 1] + markerDurations[middleIndex]) / 2 : markerDurations[middleIndex];
 
