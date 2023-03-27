@@ -40,6 +40,8 @@ export enum Quality {
     Stable = 'stable',
 }
 
+export type Commit = string | 'latest';
+
 export const platform = (() => {
     if (process.platform === 'win32') {
         return process.arch === 'arm64' ? Platform.WindowsArm : Platform.WindowsX64;
