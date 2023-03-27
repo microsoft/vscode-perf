@@ -55,10 +55,7 @@ export async function launch(options: Options) {
 		let timedOut = false;
 		let promise: Promise<string | undefined>;
 		const abortController = new AbortController();
-		process.on('SIGINT', () => {
-			abortController.abort();
-			process.exit(128 + 2);
-		});
+		process.on('SIGINT', () => abortController.abort());
 
 		switch (options.runtime) {
 			case Runtime.Desktop:
@@ -85,6 +82,10 @@ export async function launch(options: Options) {
 			abortController.abort();
 		} else {
 			clearTimeout(handle);
+			if (abortController.signal.aborted) {
+				// Exit if there is an interruption
+				process.exit();
+			}
 			if (content) {
 				for (const marker of markers) {
 					logMarker(content, marker, durations);
