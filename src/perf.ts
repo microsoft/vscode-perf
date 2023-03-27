@@ -267,8 +267,11 @@ function logMarker(content: string, marker: string, durations: Map<string, numbe
 	markerDurations.push(duration);
 	markerDurations.sort((/** @type {number} */ a, /** @type {number} */ b) => a - b);
 	durations.set(marker, markerDurations);
+	
+	const middleIndex = Math.floor(markerDurations.length / 2);
+	const median = markerDurations.length % 2 === 0 ? (markerDurations[middleIndex - 1] + markerDurations[middleIndex]) / 2 : markerDurations[middleIndex];
 
-	console.log(`${chalk.gray('[perf]')} ${marker}: ${chalk.green(`${duration}ms`)} (current), ${chalk.green(`${markerDurations[0]}ms`)} (fastest), ${chalk.green(`${markerDurations[markerDurations.length - 1]}ms`)} (slowest), ${chalk.green(`${markerDurations[Math.floor(markerDurations.length / 2)]}ms`)} (median)`);
+	console.log(`${chalk.gray('[perf]')} ${marker}: ${chalk.green(`${duration}ms`)} (current), ${chalk.green(`${markerDurations[0]}ms`)} (fastest), ${chalk.green(`${markerDurations[markerDurations.length - 1]}ms`)} (slowest), ${chalk.green(`${median}ms`)} (median)`);
 }
 
 function readLastLineSync(path: string): string {
