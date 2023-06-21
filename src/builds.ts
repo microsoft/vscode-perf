@@ -205,20 +205,18 @@ function getBuildApiName(runtime: Runtime): string {
 async function fetchBuildMetadata(runtime: Runtime, quality: Quality, commit: Commit, unreleased?: boolean): Promise<IBuildMetadata> {
 	const buildApiName = getBuildApiName(runtime);
 	let url: string;
-	let headers: Headers | undefined = undefined;
 	if (commit === 'latest') {
-		url = `https://update.code.visualstudio.com/api/update/${buildApiName}/${quality}/latest`;
-		headers = unreleased ? new Headers({ 'x-vscode-released': 'false' }) : undefined;
+		url = `https://update.code.visualstudio.com/api/update/${buildApiName}/${quality}/latest${unreleased ? '?released=false' : ''}`;
 	} else {
 		url = `https://update.code.visualstudio.com/api/versions/commit:${commit}/${buildApiName}/${quality}`;
 	}
-	const result = await jsonGet<IBuildMetadata>(url, headers);
+	const result = await jsonGet<IBuildMetadata>(url);
 	result.url = posix.join(posix.dirname(result.url), getBuildArchiveName(runtime, result));
 	return result;
 }
 
-async function jsonGet<T>(url: string, headers?: Headers): Promise<T> {
-	const authResponse = await fetch(url, { method: 'GET', headers });
+async function jsonGet<T>(url: string): Promise<T> {
+	const authResponse = await fetch(url, { method: 'GET' });
 	if (!authResponse.ok) {
 		throw new Error(`Failed to get response from update server: ${authResponse.status} ${authResponse.statusText}`);
 	}
