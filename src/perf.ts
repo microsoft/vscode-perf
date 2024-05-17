@@ -7,13 +7,13 @@ import { DATA_FOLDER, EXTENSIONS_FOLDER, INSIDERS_VSCODE_DEV_HOST_NAME, PERFORMA
 import * as fs from 'fs';
 import * as cp from 'child_process';
 import { join } from 'path';
-import { tmpdir } from 'os';
 import playwright from 'playwright';
 import chalk from "chalk";
 import { IPlaywrightStorageState } from "./types";
 import { generateVscodeDevAuthState } from "./auth";
 
 const PERFORMANCE_RUN_TIMEOUT = 60000;
+const MB = 1024 * 1024;
 
 export interface Options {
 	build: string;
@@ -58,7 +58,7 @@ export async function launch(options: Options) {
 		const abortListener = () => {
 			abortController.abort();
 			process.removeListener('SIGINT', abortListener);
-		} 
+		}
 		process.on('SIGINT', abortListener);
 
 		switch (options.runtime) {
@@ -258,13 +258,30 @@ async function launchWeb(options: Options, perfFile: string, durationMarker: str
 			// Write full message to perf file if we got a path
 			const matches = /\[prof-timers\] (.+)/.exec(text);
 			if (matches?.[1]) {
+				const { heapUsed, heapFreed } = await collectHeapStats(page);
+
 				browser.close();
-				fs.appendFileSync(perfFile, `${matches[1]}\n`);
+
+				fs.appendFileSync(perfFile, `${matches[1]}\tHeap: ${Math.round(heapUsed / MB)}MB (used) ${Math.round(heapFreed / MB)}MB (garbage)\n`);
 				resolve(`${durationMarker}	${matches[1]}`);
 			}
 		});
 		page.goto(url.href);
 	});
+}
+
+async function collectHeapStats(page: playwright.Page) {
+	try {
+		const cdp = await page.context().newCDPSession(page);
+		const heapUsed = (await cdp.send("Runtime.getHeapUsage")).usedSize;
+		await cdp.send("HeapProfiler.collectGarbage");
+		const heapFreed = heapUsed - (await cdp.send("Runtime.getHeapUsage")).usedSize;
+
+		return { heapUsed, heapFreed };
+	} catch (error) {
+		console.error(`Playwright ERROR: failed to collect heap stats: ${error}`);
+		return { heapUsed: 0, heapFreed: 0 };
+	}
 }
 
 function logMarker(content: string, marker: string, durations: Map<string, number[]>): void {

@@ -9,7 +9,7 @@ import { get } from 'https';
 import chalk from "chalk";
 import { createWriteStream, existsSync, promises } from 'fs';
 import { spawnSync } from 'child_process';
-import fetch, { Headers } from 'node-fetch';
+import fetch from 'node-fetch';
 
 interface IBuildMetadata {
 	url: string;
