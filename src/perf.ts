@@ -262,7 +262,7 @@ async function launchWeb(options: Options, perfFile: string, durationMarker: str
 
 				browser.close();
 
-				fs.appendFileSync(perfFile, `${matches[1]}\tHeap: ${Math.round(heapUsed / MB)}MB (used) ${Math.round(heapFreed / MB)}MB (gc'ed)\n`);
+				fs.appendFileSync(perfFile, `${matches[1]}\tHeap: ${Math.round(heapUsed / MB)}MB (used) ${Math.round(heapFreed / MB)}MB (garbage)\n`);
 				resolve(`${durationMarker}	${matches[1]}`);
 			}
 		});
