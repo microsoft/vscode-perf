@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See LICENSE in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { DATA_FOLDER, EXTENSIONS_FOLDER, INSIDERS_VSCODE_DEV_HOST_NAME, PERFORMANCE_FILE, PERFORMANCE_RUNS, ROOT, Runtime, USER_DATA_FOLDER, VSCODE_DEV_HOST_NAME, RUNTIME_TRACE_FOLDER } from "./constants";
+import { DATA_FOLDER, EXTENSIONS_FOLDER, INSIDERS_VSCODE_DEV_HOST_NAME, PERFORMANCE_FILE, PERFORMANCE_RUNS, Runtime, USER_DATA_FOLDER, VSCODE_DEV_HOST_NAME, RUNTIME_TRACE_FOLDER } from "./constants";
 import * as fs from 'fs';
 import * as cp from 'child_process';
 import { join } from 'path';
@@ -238,6 +238,9 @@ async function launchWeb(options: Options, perfFile: string, durationMarker: str
 		viewport: { width: 1200, height: 800 }
 	});
 
+	const cdp = await page.context().newCDPSession(page);
+	const heapTracing = await startHeapTracing(cdp);
+
 	if (options.verbose) {
 		page.on('pageerror', error => console.error(`Playwright ERROR: page error: ${error}`));
 		page.on('crash', () => console.error('Playwright ERROR: page crash'));
@@ -249,7 +252,7 @@ async function launchWeb(options: Options, perfFile: string, durationMarker: str
 		});
 	}
 
-	return new Promise<string>(resolve => {
+	return new Promise<string>(async resolve => {
 		page.on('console', async msg => {
 			const text = msg.text();
 			if (options.verbose) {
@@ -258,11 +261,11 @@ async function launchWeb(options: Options, perfFile: string, durationMarker: str
 			// Write full message to perf file if we got a path
 			const matches = /\[prof-timers\] (.+)/.exec(text);
 			if (matches?.[1]) {
-				const { heapUsed, heapFreed } = await collectHeapStats(page);
+				const { majorGCs, minorGCs, allocated, garbage, duration } = await heapTracing.stop();
 
 				browser.close();
 
-				fs.appendFileSync(perfFile, `${matches[1]}\tHeap: ${Math.round(heapUsed / MB)}MB (used) ${Math.round(heapFreed / MB)}MB (garbage)\n`);
+				fs.appendFileSync(perfFile, `${matches[1]}\tHeap: ${Math.round(allocated / MB)}MB (used) ${Math.round(garbage / MB)}MB (garbage) ${majorGCs} (MajorGC) ${minorGCs} (MinorGC) ${duration}ms (GC duration)\n`);
 				resolve(`${durationMarker}	${matches[1]}`);
 			}
 		});
@@ -270,18 +273,70 @@ async function launchWeb(options: Options, perfFile: string, durationMarker: str
 	});
 }
 
-async function collectHeapStats(page: playwright.Page) {
-	try {
-		const cdp = await page.context().newCDPSession(page);
-		const heapUsed = (await cdp.send("Runtime.getHeapUsage")).usedSize;
-		await cdp.send("HeapProfiler.collectGarbage");
-		const heapFreed = heapUsed - (await cdp.send("Runtime.getHeapUsage")).usedSize;
+interface ITracingData {
+	readonly args: {
+		readonly usedHeapSizeAfter: number;
+		readonly usedHeapSizeBefore: number;
+	},
+	readonly dur: number; 	// in microseconds
+	readonly name: string;	// e.g. MinorGC or MajorGC
+}
 
-		return { heapUsed, heapFreed };
-	} catch (error) {
-		console.error(`Playwright ERROR: failed to collect heap stats: ${error}`);
-		return { heapUsed: 0, heapFreed: 0 };
+async function startHeapTracing(cdp: playwright.CDPSession) {
+	await cdp.send('Tracing.start', { traceConfig: { includedCategories: ['v8'] } });
+
+	const data: ITracingData[] = [];
+	cdp.on('Tracing.dataCollected', e => {
+		data.push(...e.value as unknown as ITracingData[]);
+	});
+
+	return {
+		stop: async () => {
+			const tracingComplete = new Promise<unknown>(resolve => cdp.once('Tracing.tracingComplete', resolve));
+			await cdp.send('Tracing.end');
+			await tracingComplete;
+
+			let minorGCs = 0;
+			let majorGCs = 0;
+			let garbage = 0;
+			let duration = 0;
+
+			for (const entry of data) {
+				const isMinorGC = entry.name === 'MinorGC';
+				const isMajorGC = entry.name === 'MajorGC';
+				if (!isMinorGC && !isMajorGC) {
+					continue;
+				}
+
+				if (isMinorGC) {
+					minorGCs++;
+				} else if (isMajorGC) {
+					majorGCs++;
+				}
+				duration += entry.dur;
+				garbage += (entry.args.usedHeapSizeBefore - entry.args.usedHeapSizeAfter);
+			}
+
+			const heapSnapshot = await collectHeapSnaptshot(cdp);
+			garbage += heapSnapshot.garbage;
+
+			return {
+				minorGCs,
+				majorGCs,
+				allocated: heapSnapshot.allocated + garbage,
+				garbage,
+				duration: Math.round(duration / 1000)
+			};
+		}
 	}
+}
+
+async function collectHeapSnaptshot(cdp: playwright.CDPSession) {
+	const usedSizeBeforeGC = (await cdp.send("Runtime.getHeapUsage")).usedSize;
+	await cdp.send("HeapProfiler.collectGarbage");
+	const usedSizeAfterGC = (await cdp.send("Runtime.getHeapUsage")).usedSize;
+
+	return { allocated: usedSizeAfterGC, garbage: usedSizeBeforeGC - usedSizeAfterGC };
 }
 
 function logMarker(content: string, marker: string, durations: Map<string, number[]>): void {
