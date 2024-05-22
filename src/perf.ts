@@ -24,6 +24,7 @@ export interface Options {
 	folderToOpen?: string;
 	fileToOpen?: string;
 	profAppendTimers?: string;
+	traceHeapStatistics?: boolean;
 	verbose?: boolean;
 	token?: string;
 	runtimeTraceCategories?: string;
@@ -54,7 +55,7 @@ export async function launch(options: Options) {
 	} catch (error) { }
 	fs.mkdirSync(DATA_FOLDER, { recursive: true });
 
-	if (options.runtimeTraceCategories) {
+	if (options.runtimeTraceCategories || options.traceHeapStatistics) {
 		try {
 			fs.mkdirSync(RUNTIME_TRACE_FOLDER);
 		} catch (error) { }
@@ -167,11 +168,18 @@ async function launchDesktop(options: Options, perfFile: string, markers: string
 		codeArgs.push(options.fileToOpen);
 	}
 
-	if (options.runtimeTraceCategories) {
-		codeArgs.push(`--enable-tracing=${options.runtimeTraceCategories}`);
+	if (options.traceHeapStatistics || options.runtimeTraceCategories) {
 		const traceFilePath = join(RUNTIME_TRACE_FOLDER, `chrometrace_${new Date().getTime()}.log`);
 		console.log(`${chalk.gray('[perf]')} saving chromium trace file at ${chalk.green(`${traceFilePath}`)}`);
 		codeArgs.push(`--trace-startup-file=${traceFilePath}`);
+
+		if (options.traceHeapStatistics) {
+			codeArgs.push(`--enable-tracing=v8`);
+			codeArgs.push(`--trace-startup-format=json`);
+			codeArgs.push(`--trace-startup-duration=5`);
+		} else if (options.runtimeTraceCategories) {
+			codeArgs.push(`--enable-tracing=${options.runtimeTraceCategories}`);
+		}
 	}
 
 	if (options.disableCachedData) {

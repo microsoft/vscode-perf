@@ -21,6 +21,7 @@ interface Options extends OptionValues {
 	file?: string;
 	verbose?: boolean;
 	profAppendTimers?: string;
+	traceHeapStatistics?: boolean;
 	runtime?: string;
 	token?: string;
 	runtimeTraceCategories?: string;
@@ -44,7 +45,8 @@ export async function run(options?: Options): Promise<void> {
 			.addOption(new Option('-r, --runtime <runtime>', 'whether to measure the performance of desktop or web runtime').choices(['desktop', 'web']))
 			.option('--prof-append-timers <prof-append-timers>', 'Measures the time it took to create the workbench and prints it in verbose and pretty format in the passed file. `--duration-markers` and `--duration-markers-file` are ignored when this option is passed.')
 			.option('--runtime-trace-categories <runtime-trace-categories>', 'Categories to collect runtime traces. Values can be found in chrome://tracing or edge://tracing')
-			.option('--disable-cached-data', 'Disable V8 code caching (desktop only)');
+			.option('--disable-cached-data', 'Disable V8 code caching (desktop only)')
+			.option('--trace-heap-statistics', 'Enable additional heap statistics via runtime trace (desktop only)');
 
 		options = program.parse(process.argv).opts<Options>();
 	}
@@ -64,6 +66,7 @@ export async function run(options?: Options): Promise<void> {
 			folderToOpen: options.folder,
 			fileToOpen: options.file,
 			profAppendTimers: options.profAppendTimers,
+			traceHeapStatistics: options.traceHeapStatistics,
 			token: options.token,
 			runtimeTraceCategories: options.runtimeTraceCategories,
 			disableCachedData: options.disableCachedData
