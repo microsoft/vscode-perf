@@ -24,10 +24,28 @@ export interface Options {
 	folderToOpen?: string;
 	fileToOpen?: string;
 	profAppendTimers?: string;
+	profAppendHeapStatistics?: boolean;
 	verbose?: boolean;
 	token?: string;
 	runtimeTraceCategories?: string;
 	disableCachedData?: boolean;
+}
+
+interface ITracingData {
+	readonly args?: {
+		readonly usedHeapSizeAfter?: number;
+		readonly usedHeapSizeBefore?: number;
+	},
+	readonly dur: number; 	// in microseconds
+	readonly name: string;	// e.g. MinorGC or MajorGC
+}
+
+interface IGCStatistics {
+	readonly used: number;
+	readonly garbage: number;
+	readonly majorGCs: number;
+	readonly minorGCs: number;
+	readonly duration: number;
 }
 
 export async function launch(options: Options) {
@@ -37,7 +55,7 @@ export async function launch(options: Options) {
 	} catch (error) { }
 	fs.mkdirSync(DATA_FOLDER, { recursive: true });
 
-	if (options.runtimeTraceCategories) {
+	if (options.runtimeTraceCategories || options.profAppendHeapStatistics) {
 		try {
 			fs.mkdirSync(RUNTIME_TRACE_FOLDER);
 		} catch (error) { }
@@ -87,8 +105,7 @@ export async function launch(options: Options) {
 		} else {
 			clearTimeout(handle);
 			if (abortController.signal.aborted) {
-				// Exit if there is an interruption
-				process.exit();
+				process.exit(); // Exit if there is an interruption
 			}
 			if (content) {
 				for (const marker of markers) {
@@ -151,11 +168,18 @@ async function launchDesktop(options: Options, perfFile: string, markers: string
 		codeArgs.push(options.fileToOpen);
 	}
 
-	if (options.runtimeTraceCategories) {
-		codeArgs.push(`--enable-tracing=${options.runtimeTraceCategories}`);
+	if (options.profAppendHeapStatistics || options.runtimeTraceCategories) {
 		const traceFilePath = join(RUNTIME_TRACE_FOLDER, `chrometrace_${new Date().getTime()}.log`);
 		console.log(`${chalk.gray('[perf]')} saving chromium trace file at ${chalk.green(`${traceFilePath}`)}`);
 		codeArgs.push(`--trace-startup-file=${traceFilePath}`);
+
+		if (options.profAppendHeapStatistics) {
+			codeArgs.push(`--enable-tracing=v8`);
+			codeArgs.push(`--trace-startup-format=json`);
+			codeArgs.push(`--trace-startup-duration=5`);
+		} else if (options.runtimeTraceCategories) {
+			codeArgs.push(`--enable-tracing=${options.runtimeTraceCategories}`);
+		}
 	}
 
 	if (options.disableCachedData) {
@@ -258,14 +282,16 @@ async function launchWeb(options: Options, perfFile: string, durationMarker: str
 			if (options.verbose) {
 				console.error(`Playwright Console: ${text}`);
 			}
+
 			// Write full message to perf file if we got a path
 			const matches = /\[prof-timers\] (.+)/.exec(text);
 			if (matches?.[1]) {
-				const { majorGCs, minorGCs, allocated, garbage, duration } = await heapTracing.stop();
+				await new Promise(resolve => setTimeout(resolve, 3000)); // give some time for page to settle
+				const data = await heapTracing.stop();
 
 				browser.close();
 
-				fs.appendFileSync(perfFile, `${matches[1]}\tHeap: ${Math.round(allocated / MB)}MB (used) ${Math.round(garbage / MB)}MB (garbage) ${majorGCs} (MajorGC) ${minorGCs} (MinorGC) ${duration}ms (GC duration)\n`);
+				fs.appendFileSync(perfFile, `${matches[1]}\t${gcStatisticsToString(data)}\n`);
 				resolve(`${durationMarker}	${matches[1]}`);
 			}
 		});
@@ -273,16 +299,7 @@ async function launchWeb(options: Options, perfFile: string, durationMarker: str
 	});
 }
 
-interface ITracingData {
-	readonly args: {
-		readonly usedHeapSizeAfter: number;
-		readonly usedHeapSizeBefore: number;
-	},
-	readonly dur: number; 	// in microseconds
-	readonly name: string;	// e.g. MinorGC or MajorGC
-}
-
-async function startHeapTracing(cdp: playwright.CDPSession) {
+async function startHeapTracing(cdp: playwright.CDPSession): Promise<{ stop: () => Promise<IGCStatistics> }> {
 	await cdp.send('Tracing.start', { traceConfig: { includedCategories: ['v8'] } });
 
 	const data: ITracingData[] = [];
@@ -291,44 +308,54 @@ async function startHeapTracing(cdp: playwright.CDPSession) {
 	});
 
 	return {
-		stop: async () => {
-			const tracingComplete = new Promise<unknown>(resolve => cdp.once('Tracing.tracingComplete', resolve));
-			await cdp.send('Tracing.end');
-			await tracingComplete;
+		stop: () => resolveStartupHeapStatistics(cdp, data)
+	}
+}
 
-			let minorGCs = 0;
-			let majorGCs = 0;
-			let garbage = 0;
-			let duration = 0;
+async function resolveStartupHeapStatistics(cdp: playwright.CDPSession, data: ITracingData[]): Promise<IGCStatistics> {
 
-			for (const entry of data) {
-				const isMinorGC = entry.name === 'MinorGC';
-				const isMajorGC = entry.name === 'MajorGC';
-				if (!isMinorGC && !isMajorGC) {
-					continue;
+	// Wait for tracing to complete
+	const tracingComplete = new Promise<unknown>(resolve => cdp.once('Tracing.tracingComplete', resolve));
+	await cdp.send('Tracing.end');
+	await tracingComplete;
+
+	// Compute GC statistics
+	let minorGCs = 0;
+	let majorGCs = 0;
+	let garbage = 0;
+	let duration = 0;
+
+	for (const event of data) {
+		switch (event.name) {
+
+			// Major/Minor GC Events
+			case 'MinorGC':
+				minorGCs++;
+			case 'MajorGC':
+				majorGCs++;
+				if (event.args && typeof event.args.usedHeapSizeAfter === 'number' && typeof event.args.usedHeapSizeBefore === 'number') {
+					garbage += (event.args.usedHeapSizeBefore - event.args.usedHeapSizeAfter);
 				}
+				break;
 
-				if (isMinorGC) {
-					minorGCs++;
-				} else if (isMajorGC) {
-					majorGCs++;
-				}
-				duration += entry.dur;
-				garbage += (entry.args.usedHeapSizeBefore - entry.args.usedHeapSizeAfter);
-			}
-
-			const heapSnapshot = await collectHeapSnaptshot(cdp);
-			garbage += heapSnapshot.garbage;
-
-			return {
-				minorGCs,
-				majorGCs,
-				allocated: heapSnapshot.allocated + garbage,
-				garbage,
-				duration: Math.round(duration / 1000)
-			};
+			// GC Events that block the main thread
+			// Refs: https://v8.dev/blog/trash-talk
+			case 'V8.GCFinalizeMC':
+			case 'V8.GCScavenger':
+				duration += event.dur;
+				break;
 		}
 	}
+
+	// Collect final heap snapshot
+	const heapSnapshot = await collectHeapSnaptshot(cdp);
+	garbage += heapSnapshot.garbage;
+
+	return { minorGCs, majorGCs, used: heapSnapshot.used, garbage, duration: Math.round(duration / 1000) };
+}
+
+function gcStatisticsToString({ used, garbage, majorGCs, minorGCs, duration }: IGCStatistics) {
+	return `Heap: ${Math.round(used / MB)}MB (used) ${Math.round(garbage / MB)}MB (garbage) ${majorGCs} (MajorGC) ${minorGCs} (MinorGC) ${duration}ms (GC duration)`;
 }
 
 async function collectHeapSnaptshot(cdp: playwright.CDPSession) {
@@ -336,7 +363,7 @@ async function collectHeapSnaptshot(cdp: playwright.CDPSession) {
 	await cdp.send("HeapProfiler.collectGarbage");
 	const usedSizeAfterGC = (await cdp.send("Runtime.getHeapUsage")).usedSize;
 
-	return { allocated: usedSizeAfterGC, garbage: usedSizeBeforeGC - usedSizeAfterGC };
+	return { used: usedSizeAfterGC, garbage: usedSizeBeforeGC - usedSizeAfterGC };
 }
 
 function logMarker(content: string, marker: string, durations: Map<string, number[]>): void {
@@ -370,7 +397,6 @@ function readLastLineSync(path: string): string {
 
 	return lastLine ?? '';
 }
-
 
 function escapeRegExpCharacters(value: string): string {
 	return value.replace(/[\\\{\}\*\+\?\|\^\$\.\[\]\(\)]/g, '\\$&');

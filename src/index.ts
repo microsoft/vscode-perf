@@ -21,6 +21,7 @@ interface Options extends OptionValues {
 	file?: string;
 	verbose?: boolean;
 	profAppendTimers?: string;
+	profAppendHeapStatistics?: boolean;
 	runtime?: string;
 	token?: string;
 	runtimeTraceCategories?: string;
@@ -43,6 +44,7 @@ export async function run(options?: Options): Promise<void> {
 			.option('-t, --token <token>', `a GitHub token of scopes 'repo', 'workflow', 'user:email', 'read:user' to enable additional performance tests targetting web`)
 			.addOption(new Option('-r, --runtime <runtime>', 'whether to measure the performance of desktop or web runtime').choices(['desktop', 'web']))
 			.option('--prof-append-timers <prof-append-timers>', 'Measures the time it took to create the workbench and prints it in verbose and pretty format in the passed file. `--duration-markers` and `--duration-markers-file` are ignored when this option is passed.')
+			.option('--prof-append-heap-statistics', 'Enable additional heap statistics via runtime trace (desktop only). `--runtime-trace-categories` is ignored when this option is passed. Requires `--prof-append-timers` to be set.')
 			.option('--runtime-trace-categories <runtime-trace-categories>', 'Categories to collect runtime traces. Values can be found in chrome://tracing or edge://tracing')
 			.option('--disable-cached-data', 'Disable V8 code caching (desktop only)');
 
@@ -64,6 +66,7 @@ export async function run(options?: Options): Promise<void> {
 			folderToOpen: options.folder,
 			fileToOpen: options.file,
 			profAppendTimers: options.profAppendTimers,
+			profAppendHeapStatistics: options.profAppendHeapStatistics,
 			token: options.token,
 			runtimeTraceCategories: options.runtimeTraceCategories,
 			disableCachedData: options.disableCachedData
