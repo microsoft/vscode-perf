@@ -138,7 +138,12 @@ async function launchDesktop(options: Options, perfFile: string, markers: string
 		EXTENSIONS_FOLDER,
 		'--disable-extensions',
 		'--disable-workspace-trust',
-		'--disable-features=CalculateNativeWinOcclusion', // disable penalty for occluded windows
+		// Sync channel takes around 1s on modern devices
+		// which is a major contributing factor to startup times
+		// upstream has been working to improve this via an async
+		// channel and it is enabled by default since chromium 134,
+		// Refs https://issues.chromium.org/issues/40208065
+		'--enable-features=EarlyEstablishGpuChannel,EstablishGpuChannelAsync',
 		'--prof-duration-markers-file',
 		perfFile,
 		// disable GPU & sandbox to reduce the chance of flaky
