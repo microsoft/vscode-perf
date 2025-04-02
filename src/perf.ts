@@ -140,14 +140,7 @@ async function launchDesktop(options: Options, perfFile: string, markers: string
 		'--disable-workspace-trust',
 		'--disable-features=CalculateNativeWinOcclusion', // disable penalty for occluded windows
 		'--prof-duration-markers-file',
-		perfFile,
-		// disable GPU & sandbox to reduce the chance of flaky
-		// runs: we have seen the GPU process crash multiple
-		// times randomly on Windows on startup, pushing out the
-		// time at which the renderer is allowed to commit the
-		// navigation
-		'--disable-gpu',
-		'--disable-gpu-sandbox'
+		perfFile
 	];
 
 	if (options.profAppendTimers) {
