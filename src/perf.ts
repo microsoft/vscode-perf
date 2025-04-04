@@ -143,6 +143,14 @@ async function launchDesktop(options: Options, perfFile: string, markers: string
 		perfFile
 	];
 
+	if (process.platform === 'win32' || process.platform === 'linux') {
+		// disable GPU to reduce the chance of flaky
+		// runs: we have seen the GPU process crash multiple
+		// times on Windows on startup, and on linux we run
+		// most of the times in a VM with no proper gpu support.
+		codeArgs.push('--disable-gpu');
+	}
+
 	if (options.profAppendTimers) {
 		codeArgs.push('--prof-append-timers');
 		codeArgs.push(options.profAppendTimers);
