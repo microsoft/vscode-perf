@@ -132,6 +132,7 @@ async function launchDesktop(options: Options, perfFile: string, markers: string
 		'--skip-welcome',
 		'--skip-release-notes',
 		'--disable-updates',
+		'--force-user-env', // emulate a startup from UI that triggers shell resolution
 		'--user-data-dir',
 		USER_DATA_FOLDER,
 		'--extensions-dir',
