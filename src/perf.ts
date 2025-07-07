@@ -29,6 +29,7 @@ export interface Options {
 	token?: string;
 	runtimeTraceCategories?: string;
 	disableCachedData?: boolean;
+	disableTelemetry?: boolean;
 }
 
 interface ITracingData {
@@ -187,6 +188,10 @@ async function launchDesktop(options: Options, perfFile: string, markers: string
 
 	if (options.disableCachedData) {
 		codeArgs.push('--no-cached-data');
+	}
+
+	if (options.disableTelemetry) {
+		codeArgs.push('--disable-telemetry');
 	}
 
 	let childProcess: cp.ChildProcessWithoutNullStreams | undefined;
