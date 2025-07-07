@@ -26,6 +26,7 @@ interface Options extends OptionValues {
 	token?: string;
 	runtimeTraceCategories?: string;
 	disableCachedData?: boolean;
+	disableTelemetry?: boolean;
 }
 
 export async function run(options?: Options): Promise<void> {
@@ -46,7 +47,8 @@ export async function run(options?: Options): Promise<void> {
 			.option('--prof-append-timers <prof-append-timers>', 'Measures the time it took to create the workbench and prints it in verbose and pretty format in the passed file. `--duration-markers` and `--duration-markers-file` are ignored when this option is passed.')
 			.option('--prof-append-heap-statistics', 'Enable additional heap statistics via runtime trace (desktop only). `--runtime-trace-categories` is ignored when this option is passed. Requires `--prof-append-timers` to be set.')
 			.option('--runtime-trace-categories <runtime-trace-categories>', 'Categories to collect runtime traces. Values can be found in chrome://tracing or edge://tracing')
-			.option('--disable-cached-data', 'Disable V8 code caching (desktop only)');
+			.option('--disable-cached-data', 'Disable V8 code caching (desktop only)')
+			.option('--disable-telemetry', 'Disable telemetry (desktop only)');
 
 		options = program.parse(process.argv).opts<Options>();
 	}
@@ -69,7 +71,8 @@ export async function run(options?: Options): Promise<void> {
 			profAppendHeapStatistics: options.profAppendHeapStatistics,
 			token: options.token,
 			runtimeTraceCategories: options.runtimeTraceCategories,
-			disableCachedData: options.disableCachedData
+			disableCachedData: options.disableCachedData,
+			disableTelemetry: options.disableTelemetry
 		});
 	} catch (error) {
 		console.log(`${chalk.red('[error]')} ${error}`);
