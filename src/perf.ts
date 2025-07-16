@@ -196,7 +196,7 @@ async function launchDesktop(options: Options, perfFile: string, markers: string
 
 	let childProcess: cp.ChildProcessWithoutNullStreams | undefined;
 	signal.addEventListener('abort', () => childProcess?.kill());
-	childProcess = cp.spawn(options.build, codeArgs);
+	childProcess = cp.spawn(options.build, codeArgs); // CodeQL [SM01509] Either the user has to explicitly pass in options.build or a valid VS Code build is spawned.
 	childProcess.stdout.on('data', data => {
 		if (options.verbose) {
 			console.log(`${chalk.gray('[electron]')}: ${data.toString()}`);
