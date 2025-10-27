@@ -32,7 +32,7 @@
         "cookie": "^0.7.2",
         "js-base64": "^3.7.4",
         "node-fetch": "2.6.8",
-        "playwright": "^1.29.2"
+        "playwright": "^1.56.1"
     },
     "devDependencies": {
         "@types/node": "20.x",

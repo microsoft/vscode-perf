@@ -27,12 +27,9 @@ extends:
       - name: vscode-perf
 
         buildSteps:
-          - script: yarn install --frozen-lockfile
+          - script: npm ci
             displayName: Install dependencies
           
-          - script: yarn run build
-            displayName: Build
-
         testPlatforms: []
 
         publishPackage: ${{ parameters.publishPackage }}
