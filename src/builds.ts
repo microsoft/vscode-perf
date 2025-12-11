@@ -7,9 +7,10 @@ import { dirname, join, posix } from 'path';
 import { BUILDS_FOLDER, Commit, Platform, platform, Quality, Runtime } from './constants';
 import { get } from 'https';
 import chalk from "chalk";
-import { createWriteStream, existsSync, promises } from 'fs';
+import { createWriteStream, existsSync, mkdirSync, promises, readFileSync, writeFileSync } from 'fs';
 import { spawnSync } from 'child_process';
 import fetch from 'node-fetch';
+import { unzipSync } from 'fflate';
 
 interface IBuildMetadata {
 	url: string;
@@ -250,14 +251,14 @@ async function unzip(source: string, destination: string): Promise<void> {
 
 		// Windows
 		if (platform === Platform.WindowsX64 || platform === Platform.WindowsArm) {
-			spawnSync('powershell.exe', [
-				'-NoProfile',
-				'-ExecutionPolicy', 'Bypass',
-				'-NonInteractive',
-				'-NoLogo',
-				'-Command',
-				`Microsoft.PowerShell.Archive\\Expand-Archive -Path "${source}" -DestinationPath "${destination}"`
-			]);
+			const unzipped = unzipSync(readFileSync(source));
+			for (const entry of Object.keys(unzipped)) {
+				if (entry.endsWith('/')) {
+					mkdirSync(join(destination, entry), { recursive: true });
+				} else {
+					writeFileSync(join(destination, entry), unzipped[entry]);
+				}
+			}
 		}
 
 		// macOS
