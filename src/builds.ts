@@ -256,6 +256,7 @@ async function unzip(source: string, destination: string): Promise<void> {
 				if (entry.endsWith('/')) {
 					mkdirSync(join(destination, entry), { recursive: true });
 				} else {
+					mkdirSync(dirname(join(destination, entry)), { recursive: true });
 					writeFileSync(join(destination, entry), unzipped[entry]);
 				}
 			}
