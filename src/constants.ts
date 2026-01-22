@@ -3,10 +3,13 @@
  *  Licensed under the MIT License. See LICENSE in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { tmpdir } from 'os';
+import { tmpdir, homedir } from 'os';
 import { join } from 'path';
 
-export const ROOT = join(tmpdir(), 'vscode-perf');
+// macOS has trouble launching signed app bundles from
+// tmpDir after unzipping them, so we use the home directory 
+// instead.
+export const ROOT = join(process.platform === 'darwin' ? homedir() : tmpdir(), 'vscode-perf');
 
 export const BUILDS_FOLDER = join(ROOT, '.builds');
 
