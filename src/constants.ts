@@ -7,8 +7,7 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 
 // macOS has trouble launching signed app bundles from
-// tmpDir after unzipping them, so we use the home directory 
-// instead.
+// tmpDir() after unzipping them, so we use /tmp instead. 
 export const ROOT = join(process.platform === 'darwin' ? '/tmp' : tmpdir(), 'vscode-perf');
 
 export const BUILDS_FOLDER = join(ROOT, '.builds');
