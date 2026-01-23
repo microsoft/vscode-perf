@@ -30,14 +30,15 @@
         "chalk": "^4.x",
         "commander": "^9.4.0",
         "cookie": "^0.7.2",
+        "fflate": "^0.8.2",
         "js-base64": "^3.7.4",
         "node-fetch": "2.6.8",
         "playwright": "^1.56.1"
     },
     "devDependencies": {
+        "@types/cookie": "^0.6.0",
         "@types/node": "20.x",
-        "typescript": "5.6.x",
         "@types/node-fetch": "^2.6.2",
-        "@types/cookie": "^0.6.0"
+        "typescript": "5.6.x"
     }
 }
