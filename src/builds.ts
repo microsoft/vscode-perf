@@ -77,8 +77,13 @@ function getBuildExecutable(runtime: Runtime, quality: Quality, buildMetadata: I
 		case Runtime.Desktop:
 			switch (platform) {
 				case Platform.MacOSX64:
-				case Platform.MacOSArm:
-					return join(buildPath, buildName, 'Contents', 'MacOS', 'Electron')
+				case Platform.MacOSArm: {
+                    const oldLocation = join(buildPath, buildName, 'Contents', 'MacOS', 'Electron');
+                    if (existsSync(oldLocation)) {
+                        return oldLocation; // only valid until 1.109
+                    }
+                    return join(buildPath, buildName, 'Contents', 'MacOS', quality === Quality.Insider ? 'Code - Insiders' : quality === Quality.Exploration ? 'Code - Exploration' : 'Code');
+                }
 				case Platform.LinuxX64:
 				case Platform.LinuxArm:
 					return join(buildPath, buildName, quality === Quality.Insider ? 'code-insiders' : quality === Quality.Exploration ? `code-exploration` : `code`)
