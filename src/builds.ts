@@ -78,11 +78,11 @@ function getBuildExecutable(runtime: Runtime, quality: Quality, buildMetadata: I
 			switch (platform) {
 				case Platform.MacOSX64:
 				case Platform.MacOSArm: {
-                    const oldLocation = join(buildPath, buildName, 'Contents', 'MacOS', 'Electron');
-                    if (existsSync(oldLocation)) {
-                        return oldLocation; // only valid until 1.109
+                    const newLocation = join(buildPath, buildName, 'Contents', 'MacOS', quality === Quality.Insider ? 'Code - Insiders' : quality === Quality.Exploration ? 'Code - Exploration' : 'Code');
+                    if (existsSync(newLocation)) {
+                        return newLocation; // valid from 1.110 onwards
                     }
-                    return join(buildPath, buildName, 'Contents', 'MacOS', quality === Quality.Insider ? 'Code - Insiders' : quality === Quality.Exploration ? 'Code - Exploration' : 'Code');
+                    return join(buildPath, buildName, 'Contents', 'MacOS', 'Electron');
                 }
 				case Platform.LinuxX64:
 				case Platform.LinuxArm:
@@ -255,7 +255,7 @@ async function unzip(source: string, destination: string): Promise<void> {
 
 		// Windows
 		if (platform === Platform.WindowsX64 || platform === Platform.WindowsArm) {
-			spawnSync('powershell.exe', [
+			const result = spawnSync('powershell.exe', [
 				'-NoProfile',
 				'-ExecutionPolicy', 'Bypass',
 				'-NonInteractive',
@@ -263,11 +263,17 @@ async function unzip(source: string, destination: string): Promise<void> {
 				'-Command',
 				`Microsoft.PowerShell.Archive\\Expand-Archive -Path "${source}" -DestinationPath "${destination}"`
 			]);
+			if (result.error || result.status !== 0) {
+				throw result.error ?? new Error(`Failed to unzip ${source}: ${result.stderr?.toString().trim()}`);
+			}
 		}
 
 		// macOS
 		else {
-			spawnSync('unzip', [source, '-d', destination]);
+			const result = spawnSync('unzip', ['-qq', source, '-d', destination]);
+			if (result.error || result.status !== 0) {
+				throw result.error ?? new Error(`Failed to unzip ${source}: ${result.stderr?.toString().trim()}`);
+			}
 		}
 	}
 
@@ -277,6 +283,9 @@ async function unzip(source: string, destination: string): Promise<void> {
 			await promises.mkdir(destination); // tar does not create extractDir by default
 		}
 
-		spawnSync('tar', ['-xzf', source, '-C', destination]);
+		const result = spawnSync('tar', ['-xzf', source, '-C', destination]);
+		if (result.error || result.status !== 0) {
+			throw result.error ?? new Error(`Failed to extract ${source}: ${result.stderr?.toString().trim()}`);
+		}
 	}
 }
