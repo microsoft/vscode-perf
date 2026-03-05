@@ -78,12 +78,12 @@ function getBuildExecutable(runtime: Runtime, quality: Quality, buildMetadata: I
 			switch (platform) {
 				case Platform.MacOSX64:
 				case Platform.MacOSArm: {
-                    const newLocation = join(buildPath, buildName, 'Contents', 'MacOS', quality === Quality.Insider ? 'Code - Insiders' : quality === Quality.Exploration ? 'Code - Exploration' : 'Code');
-                    if (existsSync(newLocation)) {
-                        return newLocation; // valid from 1.110 onwards
-                    }
-                    return join(buildPath, buildName, 'Contents', 'MacOS', 'Electron');
-                }
+					const newLocation = join(buildPath, buildName, 'Contents', 'MacOS', quality === Quality.Insider ? 'Code - Insiders' : quality === Quality.Exploration ? 'Code - Exploration' : 'Code');
+					if (existsSync(newLocation)) {
+						return newLocation; // valid from 1.110 onwards
+					}
+					return join(buildPath, buildName, 'Contents', 'MacOS', 'Electron');
+				}
 				case Platform.LinuxX64:
 				case Platform.LinuxArm:
 					return join(buildPath, buildName, quality === Quality.Insider ? 'code-insiders' : quality === Quality.Exploration ? `code-exploration` : `code`)
@@ -270,7 +270,9 @@ async function unzip(source: string, destination: string): Promise<void> {
 
 		// macOS
 		else {
-			const result = spawnSync('unzip', ['-qq', source, '-d', destination]);
+			const result = spawnSync('unzip', ['-qq', source, '-d', destination], {
+				maxBuffer: 10 * 1024 * 1024,
+			});
 			if (result.error || result.status !== 0) {
 				throw result.error ?? new Error(`Failed to unzip ${source}: ${result.stderr?.toString().trim()}`);
 			}
@@ -283,7 +285,9 @@ async function unzip(source: string, destination: string): Promise<void> {
 			await promises.mkdir(destination); // tar does not create extractDir by default
 		}
 
-		const result = spawnSync('tar', ['-xzf', source, '-C', destination]);
+		const result = spawnSync('tar', ['-xzf', source, '-C', destination], {
+			maxBuffer: 10 * 1024 * 1024,
+		});
 		if (result.error || result.status !== 0) {
 			throw result.error ?? new Error(`Failed to extract ${source}: ${result.stderr?.toString().trim()}`);
 		}
